@@ -1,0 +1,2 @@
+g++ -Wall -O3 -march=native -g -Wno-deprecated -I.  -fopenmp -DOMP -I/usr/include decycler.cpp -lboost_program_options -lgomp -o decycler
+g++ -Wall -O3 -march=native -g -Wno-deprecated -I.  -fopenmp -DOMP -I/usr/include reverse-greedy.cpp -lboost_program_options -lgomp -o reverse-greedy
