@@ -1,15 +1,27 @@
-'''from network_dismantling import dismantler_wrapper
-from network_dismantling._sorters import dismantling_method
-'''
-cd_cmd = "cd network_dismantling/decycler/ && "
+import sys
+from pathlib import Path
+
+try:
+    from network_dismantling import dismantler_wrapper
+    from network_dismantling._sorters import dismantling_method
+except ImportError:
+    from __init__ import dismantler_wrapper
+    from _sorters import dismantling_method
+
+DECYCLER_DIR = Path(__file__).resolve().parent / "decycler"
+PROJECT_PYTHON = Path(__file__).resolve().parent / ".venv" / "bin" / "python"
+PYTHON_CMD = str(PROJECT_PYTHON if PROJECT_PYTHON.exists() else Path(sys.executable))
+cd_cmd = f"cd {DECYCLER_DIR} && "
 executable = "decycler"
 reverse_greedy_executable = "reverse-greedy"
+executable_path = DECYCLER_DIR / executable
+reverse_greedy_path = DECYCLER_DIR / reverse_greedy_executable
 
 # TODO use tempfile.NamedTemporaryFile?
 # TODO use logger instead of print
 
 
-'''@dismantler_wrapper'''
+@dismantler_wrapper
 def _decycler(network, stop_condition: int, reinsertion=True, **kwargs):
     import tempfile
     from os import close, remove
@@ -46,11 +58,16 @@ def _decycler(network, stop_condition: int, reinsertion=True, **kwargs):
             #     if edge[0] != edge[1]:
             #         tmp.write("{} {} {}\n".format(network_type, int(edge[0]) + 1, int(edge[1]) + 1))
 
-        cmds = [
-            "make",
-            f"cat {network_path} | ./{executable} -o > {seeds_path}",
-            f"(cat {network_path} {seeds_path}) | python treebreaker.py {stop_condition} > {broken_path}",
-        ]
+        cmds = []
+        if not executable_path.exists() or not reverse_greedy_path.exists():
+            cmds.append("make")
+
+        cmds.extend(
+            [
+                f"cat {network_path} | ./{executable} -o > {seeds_path}",
+                f"(cat {network_path} {seeds_path}) | {PYTHON_CMD} treebreaker.py {stop_condition} | grep '^S ' > {broken_path}",
+            ]
+        )
 
         if reinsertion is True:
             cmds.append(
@@ -65,14 +82,11 @@ def _decycler(network, stop_condition: int, reinsertion=True, **kwargs):
         for cmd in cmds:
             try:
                 print(f"Running cmd: {cmd}")
-
-                print(
-                    check_output(
-                        cd_cmd + cmd,
-                        shell=True,
-                        text=True,
-                        stderr=STDOUT,
-                    )
+                check_output(
+                    cd_cmd + cmd,
+                    shell=True,
+                    text=True,
+                    stderr=STDOUT,
                 )
             except Exception as e:
                 raise RuntimeError(f"ERROR! When running cmd: {cmd} {e}")
@@ -82,6 +96,8 @@ def _decycler(network, stop_condition: int, reinsertion=True, **kwargs):
             with open(tmp_file, "r+") as tmp:
                 for line in tmp.readlines():
                     line = line.strip().split(" ")
+                    if len(line) < 2:
+                        continue
 
                     node_type, seed = line[0], line[1]
 
@@ -120,23 +136,23 @@ method_info = {
 }
 
 
-'''@dismantling_method(
+@dismantling_method(
     name="Min-Sum",
     short_name="MS",
     plot_color="#98df8a",
     includes_reinsertion=False,
     **method_info,
-)'''
+)
 def MS(network, **kwargs):
     return _decycler(network, reinsertion=False, **kwargs)
 
 
-'''@dismantling_method(
+@dismantling_method(
     name="Min-Sum + Reinsertion",
     short_name="MS +R",
     plot_color="#2ca02c",
     includes_reinsertion=True,
     **method_info,
-)'''
+)
 def MSR(network, **kwargs):
     return _decycler(network, reinsertion=True, **kwargs)

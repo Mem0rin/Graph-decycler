@@ -6,8 +6,18 @@ from scipy.sparse.linalg import ArpackNoConvergence
 from networkx.algorithms.approximation import min_weighted_vertex_cover
 from numpy.random import shuffle
 import time
-from GBT import general_betweenness_centrality
-from generalized_betweenness_successors import generalized_betweenness_successors
+try:
+    from GBT import general_betweenness_centrality
+except ImportError:
+    general_betweenness_centrality = None
+
+try:
+    from generalized_betweenness_successors import generalized_betweenness_successors
+except ImportError:
+    generalized_betweenness_successors = None
+from decycler_steiner_enhancement import decycler_steiner_enhancement
+from decycler_steiner_enhancement import decycler_steiner_kou_enhancement
+from decycler_steiner_enhancement import decycler_steiner_mehlhorn_enhancement
 
 #################################################
 # largest connected network
@@ -202,6 +212,9 @@ def current_flow_betweenness_centrality_enhancement(G,n,n2):
 # General Betweenness Centrality
 ###############################################
 def general_betweenness_centrality_enhancement(G, n, n2):
+    if general_betweenness_centrality is None:
+        raise ImportError("GBT module is required for general_betweenness_centrality_enhancement")
+
     g = G.copy()
     time_start0 = time.time()
     print('General Betweenness Centrality Enhancement is running...')

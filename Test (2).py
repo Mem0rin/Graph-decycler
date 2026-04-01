@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import networkx as nx
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import time
 import pandas as pd
@@ -49,9 +51,10 @@ for i, filename in enumerate(files):
     print('Diameter of graph: ', r)
     enhance_methods = [
         ('HD', em.high_degree_enhancement),
-        ('GBT', em.general_betweenness_centrality_enhancement),
         ('GND', em.gnd_enhancement_1),
-        ('BT', em.high_betweenness_enhancement)
+        ('BT', em.high_betweenness_enhancement),
+        ('DSTS-K', em.decycler_steiner_kou_enhancement),
+        ('DSTS-M', em.decycler_steiner_mehlhorn_enhancement),
     ]
     
     enhance_nodes = {} #保护节点
@@ -65,10 +68,10 @@ for i, filename in enumerate(files):
     lcc_sizes[0] = am.gnd(g, n, m-1)  # None
 
     for i, prefix in enumerate(enhance_nodes.keys(), start=1):
-        lcc_sizes[i] = am.gnd_with_enhancement_1(g, n, m-1, enhance_nodes[prefix])
+        lcc_sizes[i] = am.gnd_enhancement_1(g, n, m-1, enhance_nodes[prefix])
     
-    # 目标目录
-    target_dir = r"E:\科研\Paper_figure\GCC_Size\png"
+    target_root = os.path.join(script_dir, "Paper_figure", "GCC_Size")
+    target_dir = os.path.join(target_root, "png")
 
     # 创建目录（如果不存在）
     os.makedirs(target_dir, exist_ok=True)
@@ -76,12 +79,12 @@ for i, filename in enumerate(files):
     # plot
     step = 5
     plt.figure(figsize=(5, 6))
-    colors = ['#D80000', '#264653', '#39C5BB', '#FFE211', '#FAAFBE']
-    labels = ['None', 'HD', 'GBT',  'GND', 'BT']
-    for i in range(5):
+    colors = ['#D80000', '#264653', '#FFE211', '#39C5BB', '#2A9D8F', '#E76F51']
+    labels = ['None'] + list(enhance_nodes.keys())
+    for i in range(len(labels)):
         plt.plot(x[:len(lcc_sizes[i])], lcc_sizes[i], 
         color=colors[i], label=labels[i],
-        marker='^' if i < 4 else 'o', 
+        marker='^' if i < len(labels) - 1 else 'o', 
         markersize=0, linewidth=1.8)
     plt.legend(fontsize='large')
 
@@ -98,10 +101,10 @@ for i, filename in enumerate(files):
     plt.ylim(0, 1)
     plt.subplots_adjust(top=0.96, bottom=0.1, left=0.15, right=0.93)
      # 目标目录
-    target_png = r"E:\科研\Paper_figure\GCC_Size\png"
-    target_svg = r"E:\科研\Paper_figure\GCC_Size\svg"
-    target_pdf = r"E:\科研\Paper_figure\GCC_Size\pdf"
-    target_excel = r"E:\科研\Paper_figure\GCC_Size\excel"
+    target_png = os.path.join(target_root, "png")
+    target_svg = os.path.join(target_root, "svg")
+    target_pdf = os.path.join(target_root, "pdf")
+    target_excel = os.path.join(target_root, "excel")
 
      # 创建目录
     os.makedirs(target_png, exist_ok=True)
@@ -112,7 +115,6 @@ for i, filename in enumerate(files):
     plt.savefig(os.path.join(target_png, filename[:-4] + '.png'), format='png', dpi=2000)
     plt.savefig(os.path.join(target_svg, filename[:-4] + '.svg'), format='svg')
     plt.savefig(os.path.join(target_pdf, filename[:-4] + '.pdf'), format='pdf')
-    plt.show()
     plt.close()
     
     excel_filename = os.path.join(target_excel, filename[:-4] + '.xlsx')
